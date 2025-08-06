@@ -1063,10 +1063,11 @@
         </div>
     `;
 
+       // ... (tạo biến printContent như hướng dẫn ở các câu trên)
     document.getElementById('printableInvoice').innerHTML = printContent;
     setTimeout(function () {
         window.print();
-    }, 100); // delay nhỏ cho DOM cập nhật xong
+    }, 100);
 }
         // Function to convert number to words (Vietnamese)
         function numberToWords(num) {
