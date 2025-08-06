@@ -1069,6 +1069,12 @@
             document.getElementById('printableInvoice').innerHTML = printContent;
             console.log(document.getElementById('printableInvoice').innerHTML);
             window.print();
+             // ... (toàn bộ code tạo biến printContent ở trên không đổi)
+    document.getElementById('printableInvoice').innerHTML = printContent;
+    // Thêm delay nhỏ cho DOM update xong!
+    setTimeout(function () {
+        window.print();
+    }, 100); // 100ms là hợp lý, khỏi lo lag
         }
 
         // Function to convert number to words (Vietnamese)
