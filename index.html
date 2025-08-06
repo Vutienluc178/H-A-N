@@ -21,6 +21,55 @@
             body * { visibility: hidden; }
             .invoice-print, .invoice-print * { visibility: visible; }
             .invoice-print { position: absolute; left: 0; top: 0; width: 100%; }
+            @page {
+                size: A5;
+                margin: 10mm;
+            }
+            .invoice-print {
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            .invoice-print h2 {
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+            .invoice-print h3 {
+                font-size: 14px;
+                margin: 10px 0 5px 0;
+            }
+            .invoice-print table {
+                font-size: 11px;
+            }
+            .invoice-print .clinic-header {
+                text-align: center;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+            }
+            .invoice-print .invoice-title {
+                text-align: center;
+                margin: 15px 0;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            .invoice-print .patient-info {
+                margin: 10px 0;
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+            }
+            .invoice-print .total-section {
+                margin-top: 15px;
+                border-top: 1px solid #ddd;
+                padding-top: 10px;
+            }
+            .invoice-print .footer {
+                margin-top: 20px;
+                text-align: center;
+                font-size: 10px;
+                border-top: 1px solid #ddd;
+                padding-top: 10px;
+            }
         }
     </style>
 </head>
@@ -796,14 +845,14 @@
                     item.name;
                 
                 servicesHtml += `
-                    <tr class="border-b">
+                    <tr class="border-b dark:border-gray-600">
                         <td class="py-2">
                             <div class="flex items-center space-x-2">
                                 <i class="${item.type === 'medicine' ? 'fas fa-pills text-purple-500' : 'fas fa-stethoscope text-blue-500'}"></i>
-                                <span>${displayName}</span>
+                                <span class="text-gray-900 dark:text-white">${displayName}</span>
                             </div>
                         </td>
-                        <td class="py-2 text-right">${formatCurrency(itemTotal)}</td>
+                        <td class="py-2 text-right text-gray-900 dark:text-white">${formatCurrency(itemTotal)}</td>
                     </tr>
                 `;
             });
@@ -813,20 +862,20 @@
             const total = subtotal - discountAmount;
 
             preview.innerHTML = `
-                <div class="bg-white p-6 rounded-lg">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
                     <div class="text-center mb-6">
                         <h2 class="text-xl font-bold text-blue-600">PHÒNG KHÁM ABC</h2>
-                        <p class="text-sm text-gray-600">Chuyên khoa Sản phụ khoa</p>
-                        <p class="text-sm text-gray-600">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
-                        <p class="text-sm text-gray-600">ĐT: 028.1234.5678</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Chuyên khoa Sản phụ khoa</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">ĐT: 028.1234.5678</p>
                     </div>
                     
                     <div class="text-center mb-6">
-                        <h3 class="text-lg font-bold">HÓA ĐƠN THANH TOÁN</h3>
-                        <p class="text-sm">Số: ${invoiceId} - Ngày: ${currentDate}</p>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">HÓA ĐƠN THANH TOÁN</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Số: ${invoiceId} - Ngày: ${currentDate}</p>
                     </div>
                     
-                    <div class="mb-4">
+                    <div class="mb-4 text-gray-900 dark:text-white">
                         <p><strong>Bệnh nhân:</strong> ${patient.name}</p>
                         <p><strong>Điện thoại:</strong> ${patient.phone}</p>
                         <p><strong>Địa chỉ:</strong> ${patient.address || 'Chưa có'}</p>
@@ -834,9 +883,9 @@
                     
                     <table class="w-full mb-4">
                         <thead>
-                            <tr class="border-b-2">
-                                <th class="text-left py-2">Dịch vụ</th>
-                                <th class="text-right py-2">Thành tiền</th>
+                            <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+                                <th class="text-left py-2 text-gray-900 dark:text-white">Dịch vụ</th>
+                                <th class="text-right py-2 text-gray-900 dark:text-white">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -844,14 +893,14 @@
                         </tbody>
                     </table>
                     
-                    <div class="text-right space-y-1">
+                    <div class="text-right space-y-1 text-gray-900 dark:text-white">
                         <p>Tạm tính: ${formatCurrency(subtotal)}</p>
                         ${discount > 0 ? `<p>Chiết khấu (${discount}%): -${formatCurrency(discountAmount)}</p>` : ''}
-                        <p class="text-lg font-bold">Tổng cộng: ${formatCurrency(total)}</p>
+                        <p class="text-lg font-bold text-blue-600">Tổng cộng: ${formatCurrency(total)}</p>
                     </div>
                     
                     <div class="mt-8 text-center">
-                        <p class="text-sm text-gray-600">Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Cảm ơn quý khách đã sử dụng dịch vụ!</p>
                     </div>
                 </div>
             `;
@@ -885,9 +934,183 @@
         }
 
         function printInvoice() {
-            const printContent = document.getElementById('invoicePreview').innerHTML;
+            const patient = appState.patients.find(p => p.id == document.getElementById('patientSelect').value);
+            if (!patient || appState.currentInvoice.services.length === 0) {
+                alert('Không có hóa đơn để in!');
+                return;
+            }
+
+            const invoiceId = generateInvoiceId();
+            const currentDate = new Date().toLocaleDateString('vi-VN');
+            const currentTime = new Date().toLocaleTimeString('vi-VN');
+            
+            let servicesHtml = '';
+            let subtotal = 0;
+            
+            appState.currentInvoice.services.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                
+                const displayName = item.type === 'medicine' ? 
+                    `${item.name}` : 
+                    item.name;
+                
+                const displayQuantity = item.type === 'medicine' ? 
+                    `${item.quantity} ${item.unit}` : 
+                    '1';
+                
+                servicesHtml += `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 4px 0; text-align: center;">${index + 1}</td>
+                        <td style="padding: 4px 8px;">${displayName}</td>
+                        <td style="padding: 4px 0; text-align: center;">${displayQuantity}</td>
+                        <td style="padding: 4px 0; text-align: right;">${new Intl.NumberFormat('vi-VN').format(item.price)}</td>
+                        <td style="padding: 4px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('vi-VN').format(itemTotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const discountAmount = subtotal * (discount / 100);
+            const total = subtotal - discountAmount;
+
+            const printContent = `
+                <div class="clinic-header">
+                    <h2 style="margin: 0; color: #2563eb;">PHÒNG KHÁM ABC</h2>
+                    <p style="margin: 2px 0; font-size: 11px;">Chuyên khoa Sản phụ khoa</p>
+                    <p style="margin: 2px 0; font-size: 10px;">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM | ĐT: 028.1234.5678</p>
+                </div>
+                
+                <div class="invoice-title">
+                    <h3 style="margin: 0;">HÓA ĐƠN THANH TOÁN</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 11px;">Số: ${invoiceId} | Ngày: ${currentDate} ${currentTime}</p>
+                </div>
+                
+                <div class="patient-info">
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr>
+                            <td style="width: 30%; padding: 2px 0;"><strong>Bệnh nhân:</strong></td>
+                            <td style="padding: 2px 0;">${patient.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 0;"><strong>Điện thoại:</strong></td>
+                            <td style="padding: 2px 0;">${patient.phone}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 0;"><strong>Địa chỉ:</strong></td>
+                            <td style="padding: 2px 0;">${patient.address || 'Chưa có'}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #333;">
+                            <th style="padding: 6px 4px; text-align: center; width: 8%;">STT</th>
+                            <th style="padding: 6px 8px; text-align: left; width: 45%;">Dịch vụ / Thuốc</th>
+                            <th style="padding: 6px 4px; text-align: center; width: 12%;">SL</th>
+                            <th style="padding: 6px 4px; text-align: right; width: 15%;">Đơn giá</th>
+                            <th style="padding: 6px 4px; text-align: right; width: 20%;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${servicesHtml}
+                    </tbody>
+                </table>
+                
+                <div class="total-section">
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr>
+                            <td style="text-align: right; padding: 2px 0;"><strong>Tạm tính:</strong></td>
+                            <td style="text-align: right; padding: 2px 0; width: 25%;"><strong>${new Intl.NumberFormat('vi-VN').format(subtotal)} VNĐ</strong></td>
+                        </tr>
+                        ${discount > 0 ? `
+                        <tr>
+                            <td style="text-align: right; padding: 2px 0;">Chiết khấu (${discount}%):</td>
+                            <td style="text-align: right; padding: 2px 0;">-${new Intl.NumberFormat('vi-VN').format(discountAmount)} VNĐ</td>
+                        </tr>
+                        ` : ''}
+                        <tr style="border-top: 2px solid #333;">
+                            <td style="text-align: right; padding: 6px 0; font-size: 13px;"><strong>TỔNG CỘNG:</strong></td>
+                            <td style="text-align: right; padding: 6px 0; font-size: 13px; color: #2563eb;"><strong>${new Intl.NumberFormat('vi-VN').format(total)} VNĐ</strong></td>
+                        </tr>
+                    </table>
+                    
+                    <p style="margin: 10px 0 5px 0; font-size: 11px; font-style: italic;">
+                        Bằng chữ: <strong>${numberToWords(total)} đồng</strong>
+                    </p>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <table style="width: 100%; font-size: 10px;">
+                        <tr>
+                            <td style="width: 50%; text-align: center;">
+                                <p style="margin: 0;"><strong>Bệnh nhân</strong></p>
+                                <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
+                            </td>
+                            <td style="width: 50%; text-align: center;">
+                                <p style="margin: 0;"><strong>Thu ngân</strong></p>
+                                <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="footer">
+                    <p style="margin: 0;">Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!</p>
+                    <p style="margin: 2px 0 0 0;">Hóa đơn được in lúc: ${currentDate} ${currentTime}</p>
+                </div>
+            `;
+
             document.getElementById('printableInvoice').innerHTML = printContent;
             window.print();
+        }
+
+        // Function to convert number to words (Vietnamese)
+        function numberToWords(num) {
+            if (num === 0) return "không";
+            
+            const ones = ["", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+            const tens = ["", "", "hai mươi", "ba mươi", "bốn mươi", "năm mươi", "sáu mươi", "bảy mươi", "tám mươi", "chín mươi"];
+            const scales = ["", "nghìn", "triệu", "tỷ"];
+            
+            function convertHundreds(n) {
+                let result = "";
+                
+                if (n >= 100) {
+                    result += ones[Math.floor(n / 100)] + " trăm ";
+                    n %= 100;
+                }
+                
+                if (n >= 20) {
+                    result += tens[Math.floor(n / 10)] + " ";
+                    n %= 10;
+                } else if (n >= 10) {
+                    result += "mười ";
+                    n -= 10;
+                }
+                
+                if (n > 0) {
+                    result += ones[n] + " ";
+                }
+                
+                return result.trim();
+            }
+            
+            let result = "";
+            let scaleIndex = 0;
+            
+            while (num > 0) {
+                const chunk = num % 1000;
+                if (chunk !== 0) {
+                    const chunkWords = convertHundreds(chunk);
+                    result = chunkWords + (scales[scaleIndex] ? " " + scales[scaleIndex] : "") + " " + result;
+                }
+                num = Math.floor(num / 1000);
+                scaleIndex++;
+            }
+            
+            return result.trim();
         }
 
         // Search Functions
@@ -1150,5 +1373,5 @@
         `;
         document.head.appendChild(style);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ac6b1854f21dd6',t:'MTc1NDQ2MTEyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ac7579e1991dd6',t:'MTc1NDQ2MTU0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
