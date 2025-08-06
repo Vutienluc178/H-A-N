@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClinicBill Pro Mini - Hệ thống hóa đơn phòng khám</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .dark { background: #1a1a2e; color: #e5e5e5; }
+        .dark .bg-white { background: #16213e !important; }
+        .dark .text-gray-900 { color: #e5e5e5 !important; }
+        .dark .border-gray-200 { border-color: #374151 !important; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .service-card:hover { transform: translateY(-2px); transition: all 0.3s ease; }
+        .invoice-print { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            .invoice-print, .invoice-print * { visibility: visible; }
+            .invoice-print { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 transition-colors duration-300">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-hospital text-2xl"></i>
+                    <h1 class="text-xl font-bold">ClinicBill Pro Mini</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="text-sm">
+                        <div class="font-medium">Phòng khám ABC</div>
+                        <div class="opacity-90">Sản phụ khoa</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-1 overflow-x-auto">
+                <button class="nav-btn active px-4 py-3 text-sm font-medium whitespace-nowrap" data-tab="invoice">
+                    <i class="fas fa-file-invoice mr-2"></i>Tạo hóa đơn
+                </button>
+                <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap" data-tab="patients">
+                    <i class="fas fa-users mr-2"></i>Bệnh nhân
+                </button>
+                <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap" data-tab="services">
+                    <i class="fas fa-list mr-2"></i>Dịch vụ & Thuốc
+                </button>
+                <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap" data-tab="search">
+                    <i class="fas fa-search mr-2"></i>Tra cứu
+                </button>
+                <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap" data-tab="reports">
+                    <i class="fas fa-chart-bar mr-2"></i>Báo cáo
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Tạo hóa đơn Tab -->
+        <div id="invoice-tab" class="tab-content">
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Form tạo hóa đơn -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                        <i class="fas fa-plus-circle mr-2 text-blue-500"></i>Tạo hóa đơn mới
+                    </h2>
+                    
+                    <!-- Chọn bệnh nhân -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bệnh nhân</label>
+                        <div class="flex space-x-2">
+                            <select id="patientSelect" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">Chọn bệnh nhân...</option>
+                            </select>
+                            <button id="addPatientBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Thêm dịch vụ -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Dịch vụ khám</label>
+                        <div class="flex space-x-2">
+                            <select id="serviceSelect" class="flex-1 border border-gray-300 rounded-lg px-3 py-2">
+                                <option value="">Chọn dịch vụ...</option>
+                            </select>
+                            <button id="addServiceBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Thêm thuốc -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Thuốc & Vật tư</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <select id="medicineSelect" class="col-span-2 border border-gray-300 rounded-lg px-3 py-2">
+                                <option value="">Chọn thuốc...</option>
+                            </select>
+                            <input type="number" id="medicineQuantity" placeholder="Số lượng" min="1" value="1" 
+                                   class="border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <button id="addMedicineBtn" class="mt-2 w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                            <i class="fas fa-pills mr-2"></i>Thêm thuốc
+                        </button>
+                    </div>
+
+                    <!-- Danh sách dịch vụ đã chọn -->
+                    <div class="mb-4">
+                        <h3 class="text-sm font-medium mb-2">Dịch vụ đã chọn</h3>
+                        <div id="selectedServices" class="space-y-2 max-h-40 overflow-y-auto">
+                            <!-- Services will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Chiết khấu -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Chiết khấu (%)</label>
+                        <input type="number" id="discountInput" class="w-full border border-gray-300 rounded-lg px-3 py-2" min="0" max="100" value="0">
+                    </div>
+
+                    <!-- Tổng tiền -->
+                    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex justify-between items-center text-lg font-semibold">
+                            <span>Tổng tiền:</span>
+                            <span id="totalAmount" class="text-blue-600">0 VNĐ</span>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex space-x-3">
+                        <button id="createInvoiceBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all">
+                            <i class="fas fa-file-invoice mr-2"></i>Tạo hóa đơn
+                        </button>
+                        <button id="printInvoiceBtn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600" disabled>
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview hóa đơn -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                        <i class="fas fa-eye mr-2 text-green-500"></i>Preview hóa đơn
+                    </h2>
+                    <div id="invoicePreview" class="border border-gray-200 rounded-lg p-4 min-h-96 bg-gray-50 dark:bg-gray-700">
+                        <div class="text-center text-gray-500 mt-20">
+                            <i class="fas fa-file-invoice text-4xl mb-4"></i>
+                            <p>Hóa đơn sẽ hiển thị ở đây</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bệnh nhân Tab -->
+        <div id="patients-tab" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <i class="fas fa-users mr-2 text-blue-500"></i>Quản lý bệnh nhân
+                    </h2>
+                    <button id="addNewPatientBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-user-plus mr-2"></i>Thêm bệnh nhân
+                    </button>
+                </div>
+
+                <!-- Search -->
+                <div class="mb-4">
+                    <input type="text" id="patientSearch" placeholder="Tìm kiếm theo tên, số điện thoại..." 
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Patients List -->
+                <div id="patientsList" class="space-y-3">
+                    <!-- Patients will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Dịch vụ & Thuốc Tab -->
+        <div id="services-tab" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Dịch vụ -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <i class="fas fa-stethoscope mr-2 text-green-500"></i>Dịch vụ khám
+                        </h2>
+                        <button id="addServiceModalBtn" class="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">
+                            <i class="fas fa-plus mr-1"></i>Thêm
+                        </button>
+                    </div>
+                    <div id="servicesList" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Services will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Thuốc -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <i class="fas fa-pills mr-2 text-purple-500"></i>Thuốc & Vật tư
+                        </h2>
+                        <button id="addMedicineModalBtn" class="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm">
+                            <i class="fas fa-plus mr-1"></i>Thêm
+                        </button>
+                    </div>
+                    <div id="medicinesList" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Medicines will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tra cứu Tab -->
+        <div id="search-tab" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 class="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-search mr-2 text-blue-500"></i>Tra cứu hóa đơn
+                </h2>
+
+                <!-- Search Form -->
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <input type="text" id="invoiceSearchName" placeholder="Tên bệnh nhân..." 
+                           class="border border-gray-300 rounded-lg px-3 py-2">
+                    <input type="text" id="invoiceSearchPhone" placeholder="Số điện thoại..." 
+                           class="border border-gray-300 rounded-lg px-3 py-2">
+                    <input type="text" id="invoiceSearchCode" placeholder="Mã hóa đơn..." 
+                           class="border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+
+                <!-- Search Results -->
+                <div id="searchResults" class="space-y-3">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-search text-3xl mb-3"></i>
+                        <p>Nhập thông tin để tìm kiếm hóa đơn</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Báo cáo Tab -->
+        <div id="reports-tab" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Stats Cards -->
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100">Hôm nay</p>
+                                <p class="text-2xl font-bold" id="todayRevenue">0 VNĐ</p>
+                            </div>
+                            <i class="fas fa-calendar-day text-3xl text-blue-200"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100">Tuần này</p>
+                                <p class="text-2xl font-bold" id="weekRevenue">0 VNĐ</p>
+                            </div>
+                            <i class="fas fa-calendar-week text-3xl text-green-200"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-100">Tháng này</p>
+                                <p class="text-2xl font-bold" id="monthRevenue">0 VNĐ</p>
+                            </div>
+                            <i class="fas fa-calendar-alt text-3xl text-purple-200"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-orange-100">Tổng hóa đơn</p>
+                                <p class="text-2xl font-bold" id="totalInvoices">0</p>
+                            </div>
+                            <i class="fas fa-file-invoice text-3xl text-orange-200"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Export -->
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Dịch vụ phổ biến</h3>
+                        <div id="popularServices" class="space-y-3">
+                            <!-- Popular services will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Xuất báo cáo</h3>
+                        <div class="space-y-3">
+                            <button id="exportExcelBtn" class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600">
+                                <i class="fas fa-file-excel mr-2"></i>Xuất Excel
+                            </button>
+                            <button id="exportPdfBtn" class="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600">
+                                <i class="fas fa-file-pdf mr-2"></i>Xuất PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Add Patient Modal -->
+    <div id="patientModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Thêm bệnh nhân mới</h3>
+            <form id="patientForm" class="space-y-4">
+                <input type="text" id="patientName" placeholder="Họ và tên *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <input type="tel" id="patientPhone" placeholder="Số điện thoại *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <input type="date" id="patientBirth" 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <textarea id="patientAddress" placeholder="Địa chỉ" rows="2"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
+                        Lưu
+                    </button>
+                    <button type="button" id="cancelPatientBtn" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div id="serviceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Thêm dịch vụ mới</h3>
+            <form id="serviceForm" class="space-y-4">
+                <input type="text" id="serviceName" placeholder="Tên dịch vụ *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <input type="number" id="servicePrice" placeholder="Giá tiền *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <select id="serviceCategory" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="kham">Khám bệnh</option>
+                    <option value="sieu-am">Siêu âm</option>
+                    <option value="xet-nghiem">Xét nghiệm</option>
+                    <option value="tu-van">Tư vấn</option>
+                </select>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">
+                        Lưu
+                    </button>
+                    <button type="button" id="cancelServiceBtn" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Medicine Modal -->
+    <div id="medicineModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Thêm thuốc mới</h3>
+            <form id="medicineForm" class="space-y-4">
+                <input type="text" id="medicineNameInput" placeholder="Tên thuốc *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <input type="number" id="medicinePriceInput" placeholder="Giá tiền *" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <input type="text" id="medicineUnitInput" placeholder="Đơn vị (viên, gói, chai...)" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <select id="medicineCategoryInput" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="thuoc">Thuốc</option>
+                    <option value="vattu">Vật tư y tế</option>
+                </select>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600">
+                        Lưu
+                    </button>
+                    <button type="button" id="cancelMedicineBtn" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Invoice Template -->
+    <div class="invoice-print">
+        <div id="printableInvoice" style="padding: 20px; font-family: Arial, sans-serif;">
+            <!-- Invoice content will be generated here -->
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let appState = {
+            patients: JSON.parse(localStorage.getItem('patients') || '[]'),
+            services: JSON.parse(localStorage.getItem('services') || '[]'),
+            medicines: JSON.parse(localStorage.getItem('medicines') || '[]'),
+            invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+            currentInvoice: {
+                patient: null,
+                services: [],
+                discount: 0,
+                total: 0
+            },
+            darkMode: localStorage.getItem('darkMode') === 'true'
+        };
+
+        // Initialize default data
+        if (appState.services.length === 0) {
+            appState.services = [
+                { id: 1, name: 'Khám thai định kỳ', price: 200000, category: 'kham' },
+                { id: 2, name: 'Siêu âm thai nhi', price: 300000, category: 'sieu-am' },
+                { id: 3, name: 'Xét nghiệm máu', price: 150000, category: 'xet-nghiem' },
+                { id: 4, name: 'Tư vấn dinh dưỡng', price: 100000, category: 'tu-van' },
+                { id: 5, name: 'Khám phụ khoa', price: 250000, category: 'kham' }
+            ];
+            localStorage.setItem('services', JSON.stringify(appState.services));
+        }
+
+        if (appState.medicines.length === 0) {
+            appState.medicines = [
+                { id: 1, name: 'Paracetamol 500mg', price: 5000, unit: 'viên', category: 'thuoc' },
+                { id: 2, name: 'Acid Folic 5mg', price: 3000, unit: 'viên', category: 'thuoc' },
+                { id: 3, name: 'Canxi + D3', price: 8000, unit: 'viên', category: 'thuoc' },
+                { id: 4, name: 'Băng gạc y tế', price: 15000, unit: 'cuộn', category: 'vattu' },
+                { id: 5, name: 'Bông y tế', price: 10000, unit: 'gói', category: 'vattu' }
+            ];
+            localStorage.setItem('medicines', JSON.stringify(appState.medicines));
+        }
+
+        if (appState.patients.length === 0) {
+            appState.patients = [
+                { id: 1, name: 'Nguyễn Thị Lan', phone: '0901234567', birth: '1990-05-15', address: 'Hà Nội' },
+                { id: 2, name: 'Trần Thị Mai', phone: '0912345678', birth: '1985-08-20', address: 'TP.HCM' }
+            ];
+            localStorage.setItem('patients', JSON.stringify(appState.patients));
+        }
+
+        // Utility Functions
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+        }
+
+        function generateInvoiceId() {
+            return 'HD' + Date.now().toString().slice(-8);
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('patients', JSON.stringify(appState.patients));
+            localStorage.setItem('services', JSON.stringify(appState.services));
+            localStorage.setItem('medicines', JSON.stringify(appState.medicines));
+            localStorage.setItem('invoices', JSON.stringify(appState.invoices));
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            appState.darkMode = !appState.darkMode;
+            localStorage.setItem('darkMode', appState.darkMode);
+            document.body.classList.toggle('dark', appState.darkMode);
+        }
+
+        // Tab Navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        }
+
+        // Patient Management
+        function loadPatients() {
+            const select = document.getElementById('patientSelect');
+            const list = document.getElementById('patientsList');
+            
+            select.innerHTML = '<option value="">Chọn bệnh nhân...</option>';
+            list.innerHTML = '';
+
+            appState.patients.forEach(patient => {
+                // Add to select
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.name} - ${patient.phone}`;
+                select.appendChild(option);
+
+                // Add to list
+                const patientCard = document.createElement('div');
+                patientCard.className = 'border border-gray-200 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700';
+                patientCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white">${patient.name}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">${patient.phone}</p>
+                            <p class="text-sm text-gray-500">${patient.address || 'Chưa có địa chỉ'}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editPatient(${patient.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deletePatient(${patient.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(patientCard);
+            });
+        }
+
+        function addPatient(patientData) {
+            const newPatient = {
+                id: Date.now(),
+                ...patientData
+            };
+            appState.patients.push(newPatient);
+            saveToStorage();
+            loadPatients();
+        }
+
+        function deletePatient(id) {
+            if (confirm('Bạn có chắc muốn xóa bệnh nhân này?')) {
+                appState.patients = appState.patients.filter(p => p.id !== id);
+                saveToStorage();
+                loadPatients();
+            }
+        }
+
+        // Service Management
+        function loadServices() {
+            const select = document.getElementById('serviceSelect');
+            const list = document.getElementById('servicesList');
+            
+            select.innerHTML = '<option value="">Chọn dịch vụ...</option>';
+            list.innerHTML = '';
+
+            appState.services.forEach(service => {
+                // Add to select
+                const option = document.createElement('option');
+                option.value = service.id;
+                option.textContent = `${service.name} - ${formatCurrency(service.price)}`;
+                select.appendChild(option);
+
+                // Add to list
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all';
+                serviceCard.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium text-gray-900 dark:text-white">${service.name}</h4>
+                            <p class="text-sm text-blue-600 font-medium">${formatCurrency(service.price)}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editService(${service.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteService(${service.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(serviceCard);
+            });
+        }
+
+        // Medicine Management
+        function loadMedicines() {
+            const select = document.getElementById('medicineSelect');
+            const list = document.getElementById('medicinesList');
+            
+            select.innerHTML = '<option value="">Chọn thuốc...</option>';
+            list.innerHTML = '';
+
+            appState.medicines.forEach(medicine => {
+                // Add to select
+                const option = document.createElement('option');
+                option.value = medicine.id;
+                option.textContent = `${medicine.name} - ${formatCurrency(medicine.price)}/${medicine.unit}`;
+                select.appendChild(option);
+
+                // Add to list
+                const medicineCard = document.createElement('div');
+                medicineCard.className = 'service-card border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all';
+                medicineCard.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium text-gray-900 dark:text-white">${medicine.name}</h4>
+                            <p class="text-sm text-purple-600 font-medium">${formatCurrency(medicine.price)}/${medicine.unit}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editMedicine(${medicine.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteMedicine(${medicine.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(medicineCard);
+            });
+        }
+
+        function addService(serviceData) {
+            const newService = {
+                id: Date.now(),
+                ...serviceData
+            };
+            appState.services.push(newService);
+            saveToStorage();
+            loadServices();
+        }
+
+        function deleteService(id) {
+            if (confirm('Bạn có chắc muốn xóa dịch vụ này?')) {
+                appState.services = appState.services.filter(s => s.id !== id);
+                saveToStorage();
+                loadServices();
+            }
+        }
+
+        function addMedicine(medicineData) {
+            const newMedicine = {
+                id: Date.now(),
+                ...medicineData
+            };
+            appState.medicines.push(newMedicine);
+            saveToStorage();
+            loadMedicines();
+        }
+
+        function deleteMedicine(id) {
+            if (confirm('Bạn có chắc muốn xóa thuốc này?')) {
+                appState.medicines = appState.medicines.filter(m => m.id !== id);
+                saveToStorage();
+                loadMedicines();
+            }
+        }
+
+        // Invoice Management
+        function addServiceToInvoice() {
+            const serviceId = document.getElementById('serviceSelect').value;
+            if (!serviceId) return;
+
+            const service = appState.services.find(s => s.id == serviceId);
+            if (!service) return;
+
+            // Check if service already added
+            if (appState.currentInvoice.services.find(s => s.id == serviceId && s.type === 'service')) {
+                alert('Dịch vụ đã được thêm!');
+                return;
+            }
+
+            appState.currentInvoice.services.push({
+                ...service,
+                quantity: 1,
+                type: 'service'
+            });
+
+            updateInvoiceDisplay();
+            document.getElementById('serviceSelect').value = '';
+        }
+
+        function addMedicineToInvoice() {
+            const medicineId = document.getElementById('medicineSelect').value;
+            const quantity = parseInt(document.getElementById('medicineQuantity').value) || 1;
+            
+            if (!medicineId) {
+                alert('Vui lòng chọn thuốc!');
+                return;
+            }
+
+            const medicine = appState.medicines.find(m => m.id == medicineId);
+            if (!medicine) return;
+
+            // Check if medicine already added, if so update quantity
+            const existingMedicine = appState.currentInvoice.services.find(s => s.id == medicineId && s.type === 'medicine');
+            if (existingMedicine) {
+                existingMedicine.quantity += quantity;
+            } else {
+                appState.currentInvoice.services.push({
+                    ...medicine,
+                    quantity: quantity,
+                    type: 'medicine'
+                });
+            }
+
+            updateInvoiceDisplay();
+            document.getElementById('medicineSelect').value = '';
+            document.getElementById('medicineQuantity').value = '1';
+        }
+
+        function removeItemFromInvoice(index) {
+            appState.currentInvoice.services.splice(index, 1);
+            updateInvoiceDisplay();
+        }
+
+        function updateInvoiceDisplay() {
+            const container = document.getElementById('selectedServices');
+            const totalElement = document.getElementById('totalAmount');
+            
+            container.innerHTML = '';
+            let subtotal = 0;
+
+            appState.currentInvoice.services.forEach((item, index) => {
+                subtotal += item.price * item.quantity;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+                
+                const displayName = item.type === 'medicine' ? 
+                    `${item.name} (${item.quantity} ${item.unit})` : 
+                    item.name;
+                
+                const displayPrice = item.type === 'medicine' ? 
+                    `${formatCurrency(item.price)}/${item.unit} x ${item.quantity}` : 
+                    formatCurrency(item.price);
+
+                const iconClass = item.type === 'medicine' ? 'fas fa-pills text-purple-500' : 'fas fa-stethoscope text-blue-500';
+                
+                itemDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <i class="${iconClass}"></i>
+                        <div>
+                            <span class="font-medium">${displayName}</span>
+                            <div class="text-sm text-gray-600">${displayPrice}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-medium text-green-600">${formatCurrency(item.price * item.quantity)}</span>
+                        <button onclick="removeItemFromInvoice(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const discountAmount = subtotal * (discount / 100);
+            const total = subtotal - discountAmount;
+
+            appState.currentInvoice.total = total;
+            totalElement.textContent = formatCurrency(total);
+
+            updateInvoicePreview();
+        }
+
+        function updateInvoicePreview() {
+            const preview = document.getElementById('invoicePreview');
+            const patient = appState.patients.find(p => p.id == document.getElementById('patientSelect').value);
+            
+            if (!patient || appState.currentInvoice.services.length === 0) {
+                preview.innerHTML = `
+                    <div class="text-center text-gray-500 mt-20">
+                        <i class="fas fa-file-invoice text-4xl mb-4"></i>
+                        <p>Hóa đơn sẽ hiển thị ở đây</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const invoiceId = generateInvoiceId();
+            const currentDate = new Date().toLocaleDateString('vi-VN');
+            
+            let servicesHtml = '';
+            let subtotal = 0;
+            
+            appState.currentInvoice.services.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                
+                const displayName = item.type === 'medicine' ? 
+                    `${item.name} (${item.quantity} ${item.unit})` : 
+                    item.name;
+                
+                servicesHtml += `
+                    <tr class="border-b">
+                        <td class="py-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="${item.type === 'medicine' ? 'fas fa-pills text-purple-500' : 'fas fa-stethoscope text-blue-500'}"></i>
+                                <span>${displayName}</span>
+                            </div>
+                        </td>
+                        <td class="py-2 text-right">${formatCurrency(itemTotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const discountAmount = subtotal * (discount / 100);
+            const total = subtotal - discountAmount;
+
+            preview.innerHTML = `
+                <div class="bg-white p-6 rounded-lg">
+                    <div class="text-center mb-6">
+                        <h2 class="text-xl font-bold text-blue-600">PHÒNG KHÁM ABC</h2>
+                        <p class="text-sm text-gray-600">Chuyên khoa Sản phụ khoa</p>
+                        <p class="text-sm text-gray-600">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+                        <p class="text-sm text-gray-600">ĐT: 028.1234.5678</p>
+                    </div>
+                    
+                    <div class="text-center mb-6">
+                        <h3 class="text-lg font-bold">HÓA ĐƠN THANH TOÁN</h3>
+                        <p class="text-sm">Số: ${invoiceId} - Ngày: ${currentDate}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p><strong>Bệnh nhân:</strong> ${patient.name}</p>
+                        <p><strong>Điện thoại:</strong> ${patient.phone}</p>
+                        <p><strong>Địa chỉ:</strong> ${patient.address || 'Chưa có'}</p>
+                    </div>
+                    
+                    <table class="w-full mb-4">
+                        <thead>
+                            <tr class="border-b-2">
+                                <th class="text-left py-2">Dịch vụ</th>
+                                <th class="text-right py-2">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${servicesHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div class="text-right space-y-1">
+                        <p>Tạm tính: ${formatCurrency(subtotal)}</p>
+                        ${discount > 0 ? `<p>Chiết khấu (${discount}%): -${formatCurrency(discountAmount)}</p>` : ''}
+                        <p class="text-lg font-bold">Tổng cộng: ${formatCurrency(total)}</p>
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <p class="text-sm text-gray-600">Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createInvoice() {
+            const patientId = document.getElementById('patientSelect').value;
+            if (!patientId || appState.currentInvoice.services.length === 0) {
+                alert('Vui lòng chọn bệnh nhân và thêm dịch vụ!');
+                return;
+            }
+
+            const patient = appState.patients.find(p => p.id == patientId);
+            const invoice = {
+                id: generateInvoiceId(),
+                date: new Date().toISOString(),
+                patient: patient,
+                services: [...appState.currentInvoice.services],
+                discount: parseFloat(document.getElementById('discountInput').value) || 0,
+                total: appState.currentInvoice.total
+            };
+
+            appState.invoices.push(invoice);
+            saveToStorage();
+            
+            // Enable print button
+            document.getElementById('printInvoiceBtn').disabled = false;
+            
+            alert('Hóa đơn đã được tạo thành công!');
+            updateReports();
+        }
+
+        function printInvoice() {
+            const printContent = document.getElementById('invoicePreview').innerHTML;
+            document.getElementById('printableInvoice').innerHTML = printContent;
+            window.print();
+        }
+
+        // Search Functions
+        function searchInvoices() {
+            const name = document.getElementById('invoiceSearchName').value.toLowerCase();
+            const phone = document.getElementById('invoiceSearchPhone').value;
+            const code = document.getElementById('invoiceSearchCode').value.toLowerCase();
+            
+            const results = appState.invoices.filter(invoice => {
+                return (!name || invoice.patient.name.toLowerCase().includes(name)) &&
+                       (!phone || invoice.patient.phone.includes(phone)) &&
+                       (!code || invoice.id.toLowerCase().includes(code));
+            });
+
+            displaySearchResults(results);
+        }
+
+        function displaySearchResults(results) {
+            const container = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-search text-3xl mb-3"></i>
+                        <p>Không tìm thấy hóa đơn nào</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            results.forEach(invoice => {
+                const invoiceCard = document.createElement('div');
+                invoiceCard.className = 'border border-gray-200 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700';
+                invoiceCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white">
+                                ${invoice.id} - ${invoice.patient.name}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                ${invoice.patient.phone} | ${new Date(invoice.date).toLocaleDateString('vi-VN')}
+                            </p>
+                            <p class="text-lg font-semibold text-blue-600">${formatCurrency(invoice.total)}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="viewInvoiceDetail('${invoice.id}')" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                                Xem
+                            </button>
+                            <button onclick="reprintInvoice('${invoice.id}')" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                                In lại
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(invoiceCard);
+            });
+        }
+
+        // Reports
+        function updateReports() {
+            const today = new Date();
+            const todayStr = today.toDateString();
+            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            let todayRevenue = 0;
+            let weekRevenue = 0;
+            let monthRevenue = 0;
+            const serviceCount = {};
+
+            appState.invoices.forEach(invoice => {
+                const invoiceDate = new Date(invoice.date);
+                
+                if (invoiceDate.toDateString() === todayStr) {
+                    todayRevenue += invoice.total;
+                }
+                if (invoiceDate >= weekStart) {
+                    weekRevenue += invoice.total;
+                }
+                if (invoiceDate >= monthStart) {
+                    monthRevenue += invoice.total;
+                }
+
+                invoice.services.forEach(service => {
+                    serviceCount[service.name] = (serviceCount[service.name] || 0) + 1;
+                });
+            });
+
+            document.getElementById('todayRevenue').textContent = formatCurrency(todayRevenue);
+            document.getElementById('weekRevenue').textContent = formatCurrency(weekRevenue);
+            document.getElementById('monthRevenue').textContent = formatCurrency(monthRevenue);
+            document.getElementById('totalInvoices').textContent = appState.invoices.length;
+
+            // Popular services
+            const popularServices = Object.entries(serviceCount)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+
+            const popularContainer = document.getElementById('popularServices');
+            popularContainer.innerHTML = '';
+            
+            popularServices.forEach(([serviceName, count]) => {
+                const serviceDiv = document.createElement('div');
+                serviceDiv.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+                serviceDiv.innerHTML = `
+                    <span class="font-medium">${serviceName}</span>
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">${count}</span>
+                `;
+                popularContainer.appendChild(serviceDiv);
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dark mode
+            if (appState.darkMode) {
+                document.body.classList.add('dark');
+            }
+
+            // Load initial data
+            loadPatients();
+            loadServices();
+            loadMedicines();
+            updateReports();
+
+            // Navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => showTab(btn.dataset.tab));
+            });
+
+            // Dark mode toggle
+            document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+            // Patient management
+            document.getElementById('addPatientBtn').addEventListener('click', () => {
+                document.getElementById('patientModal').classList.remove('hidden');
+                document.getElementById('patientModal').classList.add('flex');
+            });
+
+            document.getElementById('addNewPatientBtn').addEventListener('click', () => {
+                document.getElementById('patientModal').classList.remove('hidden');
+                document.getElementById('patientModal').classList.add('flex');
+            });
+
+            document.getElementById('cancelPatientBtn').addEventListener('click', () => {
+                document.getElementById('patientModal').classList.add('hidden');
+                document.getElementById('patientModal').classList.remove('flex');
+            });
+
+            document.getElementById('patientForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                addPatient({
+                    name: document.getElementById('patientName').value,
+                    phone: document.getElementById('patientPhone').value,
+                    birth: document.getElementById('patientBirth').value,
+                    address: document.getElementById('patientAddress').value
+                });
+                document.getElementById('patientModal').classList.add('hidden');
+                document.getElementById('patientModal').classList.remove('flex');
+                e.target.reset();
+            });
+
+            // Service management
+            document.getElementById('addServiceModalBtn').addEventListener('click', () => {
+                document.getElementById('serviceModal').classList.remove('hidden');
+                document.getElementById('serviceModal').classList.add('flex');
+            });
+
+            document.getElementById('cancelServiceBtn').addEventListener('click', () => {
+                document.getElementById('serviceModal').classList.add('hidden');
+                document.getElementById('serviceModal').classList.remove('flex');
+            });
+
+            document.getElementById('serviceForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                addService({
+                    name: document.getElementById('serviceName').value,
+                    price: parseFloat(document.getElementById('servicePrice').value),
+                    category: document.getElementById('serviceCategory').value
+                });
+                document.getElementById('serviceModal').classList.add('hidden');
+                document.getElementById('serviceModal').classList.remove('flex');
+                e.target.reset();
+            });
+
+            // Medicine management
+            document.getElementById('addMedicineModalBtn').addEventListener('click', () => {
+                document.getElementById('medicineModal').classList.remove('hidden');
+                document.getElementById('medicineModal').classList.add('flex');
+            });
+
+            document.getElementById('cancelMedicineBtn').addEventListener('click', () => {
+                document.getElementById('medicineModal').classList.add('hidden');
+                document.getElementById('medicineModal').classList.remove('flex');
+            });
+
+            document.getElementById('medicineForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                addMedicine({
+                    name: document.getElementById('medicineNameInput').value,
+                    price: parseFloat(document.getElementById('medicinePriceInput').value),
+                    unit: document.getElementById('medicineUnitInput').value,
+                    category: document.getElementById('medicineCategoryInput').value
+                });
+                document.getElementById('medicineModal').classList.add('hidden');
+                document.getElementById('medicineModal').classList.remove('flex');
+                e.target.reset();
+            });
+
+            // Invoice management
+            document.getElementById('addServiceBtn').addEventListener('click', addServiceToInvoice);
+            document.getElementById('addMedicineBtn').addEventListener('click', addMedicineToInvoice);
+            document.getElementById('discountInput').addEventListener('input', updateInvoiceDisplay);
+            document.getElementById('createInvoiceBtn').addEventListener('click', createInvoice);
+            document.getElementById('printInvoiceBtn').addEventListener('click', printInvoice);
+
+            // Search
+            ['invoiceSearchName', 'invoiceSearchPhone', 'invoiceSearchCode'].forEach(id => {
+                document.getElementById(id).addEventListener('input', searchInvoices);
+            });
+
+            // Patient search
+            document.getElementById('patientSearch').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredPatients = appState.patients.filter(patient => 
+                    patient.name.toLowerCase().includes(searchTerm) || 
+                    patient.phone.includes(searchTerm)
+                );
+                // Update display with filtered patients
+            });
+
+            // Export functions
+            document.getElementById('exportExcelBtn').addEventListener('click', () => {
+                alert('Tính năng xuất Excel sẽ được cập nhật trong phiên bản tiếp theo!');
+            });
+
+            document.getElementById('exportPdfBtn').addEventListener('click', () => {
+                alert('Tính năng xuất PDF sẽ được cập nhật trong phiên bản tiếp theo!');
+            });
+        });
+
+        // CSS for active nav button
+        const style = document.createElement('style');
+        style.textContent = `
+            .nav-btn.active {
+                background-color: #3b82f6;
+                color: white;
+            }
+            .nav-btn:hover {
+                background-color: #f3f4f6;
+            }
+            .nav-btn.active:hover {
+                background-color: #2563eb;
+            }
+            .dark .nav-btn:hover {
+                background-color: #374151;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ac6b1854f21dd6',t:'MTc1NDQ2MTEyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
