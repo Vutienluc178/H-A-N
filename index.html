@@ -933,150 +933,141 @@
             updateReports();
         }
 
-        function printInvoice() {
-            const patient = appState.patients.find(p => p.id == document.getElementById('patientSelect').value);
-            if (!patient || appState.currentInvoice.services.length === 0) {
-                alert('Không có hóa đơn để in!');
-                return;
-            }
+       function printInvoice() {
+    const patient = appState.patients.find(p => p.id == document.getElementById('patientSelect').value);
+    if (!patient || appState.currentInvoice.services.length === 0) {
+        alert('Không có hóa đơn để in!');
+        return;
+    }
 
-            const invoiceId = generateInvoiceId();
-            const currentDate = new Date().toLocaleDateString('vi-VN');
-            const currentTime = new Date().toLocaleTimeString('vi-VN');
+    const invoiceId = generateInvoiceId();
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+    const currentTime = new Date().toLocaleTimeString('vi-VN');
+    
+    let servicesHtml = '';
+    let subtotal = 0;
+    
+    appState.currentInvoice.services.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        const displayName = item.type === 'medicine' ? 
+            `${item.name}` : 
+            item.name;
+        
+        const displayQuantity = item.type === 'medicine' ? 
+            `${item.quantity} ${item.unit}` : 
+            '1';
+        
+        servicesHtml += `
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 4px 0; text-align: center;">${index + 1}</td>
+                <td style="padding: 4px 8px;">${displayName}</td>
+                <td style="padding: 4px 0; text-align: center;">${displayQuantity}</td>
+                <td style="padding: 4px 0; text-align: right;">${new Intl.NumberFormat('vi-VN').format(item.price)}</td>
+                <td style="padding: 4px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('vi-VN').format(itemTotal)}</td>
+            </tr>
+        `;
+    });
+
+    const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+    const discountAmount = subtotal * (discount / 100);
+    const total = subtotal - discountAmount;
+
+    const printContent = `
+        <div class="clinic-header">
+            <img src="https://img.icons8.com/fluency/48/000000/hospital-room.png" style="height:44px;margin-bottom:4px;">
+            <h2 style="margin: 0; color: #2563eb;">PHÒNG KHÁM ABC</h2>
+            <p style="margin: 2px 0; font-size: 11px;">Chuyên khoa Sản phụ khoa</p>
+            <p style="margin: 2px 0; font-size: 10px;">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM | ĐT: 028.1234.5678</p>
+        </div>
+        
+        <div class="invoice-title">
+            <h3 style="margin: 0;">HÓA ĐƠN THANH TOÁN</h3>
+            <p style="margin: 5px 0 0 0; font-size: 11px;">Số: ${invoiceId} | Ngày: ${currentDate} ${currentTime}</p>
+        </div>
+        
+        <div class="patient-info">
+            <table style="width: 100%; font-size: 11px;">
+                <tr>
+                    <td style="width: 30%; padding: 2px 0;"><strong>Bệnh nhân:</strong></td>
+                    <td style="padding: 2px 0;">${patient.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Điện thoại:</strong></td>
+                    <td style="padding: 2px 0;">${patient.phone}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Địa chỉ:</strong></td>
+                    <td style="padding: 2px 0;">${patient.address || 'Chưa có'}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #333;">
+                    <th style="padding: 6px 4px; text-align: center; width: 8%;">STT</th>
+                    <th style="padding: 6px 8px; text-align: left; width: 45%;">Dịch vụ / Thuốc</th>
+                    <th style="padding: 6px 4px; text-align: center; width: 12%;">SL</th>
+                    <th style="padding: 6px 4px; text-align: right; width: 15%;">Đơn giá</th>
+                    <th style="padding: 6px 4px; text-align: right; width: 20%;">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${servicesHtml}
+            </tbody>
+        </table>
+        
+        <div class="total-section">
+            <table style="width: 100%; font-size: 11px;">
+                <tr>
+                    <td style="text-align: right; padding: 2px 0;"><strong>Tạm tính:</strong></td>
+                    <td style="text-align: right; padding: 2px 0; width: 25%;"><strong>${new Intl.NumberFormat('vi-VN').format(subtotal)} VNĐ</strong></td>
+                </tr>
+                ${discount > 0 ? `
+                <tr>
+                    <td style="text-align: right; padding: 2px 0;">Chiết khấu (${discount}%):</td>
+                    <td style="text-align: right; padding: 2px 0;">-${new Intl.NumberFormat('vi-VN').format(discountAmount)} VNĐ</td>
+                </tr>
+                ` : ''}
+                <tr style="border-top: 2px solid #333;">
+                    <td style="text-align: right; padding: 6px 0; font-size: 13px;"><strong>TỔNG CỘNG:</strong></td>
+                    <td style="text-align: right; padding: 6px 0; font-size: 13px; color: #2563eb;"><strong>${new Intl.NumberFormat('vi-VN').format(total)} VNĐ</strong></td>
+                </tr>
+            </table>
             
-            let servicesHtml = '';
-            let subtotal = 0;
-            
-            appState.currentInvoice.services.forEach((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                subtotal += itemTotal;
-                
-                const displayName = item.type === 'medicine' ? 
-                    `${item.name}` : 
-                    item.name;
-                
-                const displayQuantity = item.type === 'medicine' ? 
-                    `${item.quantity} ${item.unit}` : 
-                    '1';
-                
-                servicesHtml += `
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 4px 0; text-align: center;">${index + 1}</td>
-                        <td style="padding: 4px 8px;">${displayName}</td>
-                        <td style="padding: 4px 0; text-align: center;">${displayQuantity}</td>
-                        <td style="padding: 4px 0; text-align: right;">${new Intl.NumberFormat('vi-VN').format(item.price)}</td>
-                        <td style="padding: 4px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('vi-VN').format(itemTotal)}</td>
-                    </tr>
-                `;
-            });
+            <p style="margin: 10px 0 5px 0; font-size: 11px; font-style: italic;">
+                Bằng chữ: <strong>${numberToWords(total)} đồng</strong>
+            </p>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <table style="width: 100%; font-size: 10px;">
+                <tr>
+                    <td style="width: 50%; text-align: center;">
+                        <p style="margin: 0;"><strong>Bệnh nhân</strong></p>
+                        <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
+                    </td>
+                    <td style="width: 50%; text-align: center;">
+                        <p style="margin: 0;"><strong>Thu ngân</strong></p>
+                        <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <p style="margin: 0;">Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!</p>
+            <p style="margin: 2px 0 0 0;">Hóa đơn được in lúc: ${currentDate} ${currentTime}</p>
+        </div>
+    `;
 
-            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-            const discountAmount = subtotal * (discount / 100);
-            const total = subtotal - discountAmount;
-
-            const printContent = `
-                <div class="clinic-header">
-                // Chèn sau <div class="clinic-header">
-                <img src="LINK_LOGO_PHONG_KHAM" style="height:44px;margin-bottom:4px;">
-                <img src="https://img.icons8.com/fluency/48/000000/hospital-room.png" style="height:44px;margin-bottom:4px;">
-
-                    <h2 style="margin: 0; color: #2563eb;">PHÒNG KHÁM ABC</h2>
-                    <p style="margin: 2px 0; font-size: 11px;">Chuyên khoa Sản phụ khoa</p>
-                    <p style="margin: 2px 0; font-size: 10px;">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM | ĐT: 028.1234.5678</p>
-                </div>
-                
-                <div class="invoice-title">
-                    <h3 style="margin: 0;">HÓA ĐƠN THANH TOÁN</h3>
-                    <p style="margin: 5px 0 0 0; font-size: 11px;">Số: ${invoiceId} | Ngày: ${currentDate} ${currentTime}</p>
-                </div>
-                
-                <div class="patient-info">
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr>
-                            <td style="width: 30%; padding: 2px 0;"><strong>Bệnh nhân:</strong></td>
-                            <td style="padding: 2px 0;">${patient.name}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 0;"><strong>Điện thoại:</strong></td>
-                            <td style="padding: 2px 0;">${patient.phone}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 0;"><strong>Địa chỉ:</strong></td>
-                            <td style="padding: 2px 0;">${patient.address || 'Chưa có'}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
-                    <thead>
-                        <tr style="background: #f8f9fa; border-bottom: 2px solid #333;">
-                            <th style="padding: 6px 4px; text-align: center; width: 8%;">STT</th>
-                            <th style="padding: 6px 8px; text-align: left; width: 45%;">Dịch vụ / Thuốc</th>
-                            <th style="padding: 6px 4px; text-align: center; width: 12%;">SL</th>
-                            <th style="padding: 6px 4px; text-align: right; width: 15%;">Đơn giá</th>
-                            <th style="padding: 6px 4px; text-align: right; width: 20%;">Thành tiền</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${servicesHtml}
-                    </tbody>
-                </table>
-                
-                <div class="total-section">
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr>
-                            <td style="text-align: right; padding: 2px 0;"><strong>Tạm tính:</strong></td>
-                            <td style="text-align: right; padding: 2px 0; width: 25%;"><strong>${new Intl.NumberFormat('vi-VN').format(subtotal)} VNĐ</strong></td>
-                        </tr>
-                        ${discount > 0 ? `
-                        <tr>
-                            <td style="text-align: right; padding: 2px 0;">Chiết khấu (${discount}%):</td>
-                            <td style="text-align: right; padding: 2px 0;">-${new Intl.NumberFormat('vi-VN').format(discountAmount)} VNĐ</td>
-                        </tr>
-                        ` : ''}
-                        <tr style="border-top: 2px solid #333;">
-                            <td style="text-align: right; padding: 6px 0; font-size: 13px;"><strong>TỔNG CỘNG:</strong></td>
-                            <td style="text-align: right; padding: 6px 0; font-size: 13px; color: #2563eb;"><strong>${new Intl.NumberFormat('vi-VN').format(total)} VNĐ</strong></td>
-                        </tr>
-                    </table>
-                    
-                    <p style="margin: 10px 0 5px 0; font-size: 11px; font-style: italic;">
-                        Bằng chữ: <strong>${numberToWords(total)} đồng</strong>
-                    </p>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <table style="width: 100%; font-size: 10px;">
-                        <tr>
-                            <td style="width: 50%; text-align: center;">
-                                <p style="margin: 0;"><strong>Bệnh nhân</strong></p>
-                                <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
-                            </td>
-                            <td style="width: 50%; text-align: center;">
-                                <p style="margin: 0;"><strong>Thu ngân</strong></p>
-                                <p style="margin: 30px 0 0 0;">(Ký, ghi rõ họ tên)</p>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="footer">
-                    <p style="margin: 0;">Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!</p>
-                    <p style="margin: 2px 0 0 0;">Hóa đơn được in lúc: ${currentDate} ${currentTime}</p>
-                </div>
-            `;
-
-            document.getElementById('printableInvoice').innerHTML = printContent;
-            console.log(document.getElementById('printableInvoice').innerHTML);
-            window.print();
-             // ... (toàn bộ code tạo biến printContent ở trên không đổi)
     document.getElementById('printableInvoice').innerHTML = printContent;
-    // Thêm delay nhỏ cho DOM update xong!
     setTimeout(function () {
         window.print();
-    }, 100); // 100ms là hợp lý, khỏi lo lag
-        }
-
+    }, 100); // delay nhỏ cho DOM cập nhật xong
+}
         // Function to convert number to words (Vietnamese)
         function numberToWords(num) {
             if (num === 0) return "không";
