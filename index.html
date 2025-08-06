@@ -976,6 +976,10 @@
 
             const printContent = `
                 <div class="clinic-header">
+                // Chèn sau <div class="clinic-header">
+                <img src="LINK_LOGO_PHONG_KHAM" style="height:44px;margin-bottom:4px;">
+                <img src="https://img.icons8.com/fluency/48/000000/hospital-room.png" style="height:44px;margin-bottom:4px;">
+
                     <h2 style="margin: 0; color: #2563eb;">PHÒNG KHÁM ABC</h2>
                     <p style="margin: 2px 0; font-size: 11px;">Chuyên khoa Sản phụ khoa</p>
                     <p style="margin: 2px 0; font-size: 10px;">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM | ĐT: 028.1234.5678</p>
@@ -1063,6 +1067,7 @@
             `;
 
             document.getElementById('printableInvoice').innerHTML = printContent;
+            console.log(document.getElementById('printableInvoice').innerHTML);
             window.print();
         }
 
